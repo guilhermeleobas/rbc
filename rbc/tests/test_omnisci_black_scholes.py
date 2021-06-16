@@ -157,3 +157,23 @@ def test_black_scholes_udtf(omnisci):
 
     for r, o in zip(result, oprice):
         assert math.isclose(o[0], r[0], abs_tol=0.0001)
+
+
+
+def test_fx(omnisci):
+
+    from rbc.dispatcher import jit
+
+    # @njit
+    # def bar(x):
+    #     return math.exp(x)
+
+    @jit
+    def baz(x):
+        return math.exp(x)
+
+    @omnisci('double(double)', devices=['cpu', 'gpu'])
+    def foo(x):
+        return math.exp(x) + baz(x)
+
+    # print(foo)
