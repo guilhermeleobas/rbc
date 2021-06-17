@@ -842,6 +842,7 @@ class RemoteOmnisci(RemoteJIT):
         inputArgTypes = []
         outputArgTypes = []
         sqlArgTypes = []
+        annotations = []
         sizer = None
         sizer_index = -1
 
@@ -873,6 +874,13 @@ class RemoteOmnisci(RemoteJIT):
                 if isinstance(a, OmnisciOutputColumnType):
                     atype = self.type_to_extarg(a)
                     outputArgTypes.append(atype)
+
+                    # get input_id for output types
+                    _input_id = annot.get('input_id', unspecified)
+                    if _input_id is not unspecified:
+                        annotations.append(f"input_id={_input_id}")  # noqa
+                    else:
+                        annotations.append('""')
                 else:
                     atype = self.type_to_extarg(a)
                     if isinstance(a, (OmnisciColumnType, OmnisciColumnListType)):
@@ -902,7 +910,8 @@ class RemoteOmnisci(RemoteJIT):
         return thrift.TUserDefinedTableFunction(
             name + sig.mangling(),
             sizer_type, sizer_index,
-            inputArgTypes, outputArgTypes, sqlArgTypes)
+            inputArgTypes, outputArgTypes, sqlArgTypes,
+            annotations)
 
     def _make_udtf_old(self, caller, orig_sig, sig):
         # old style UDTF for omniscidb <= 5.3, to be deprecated
