@@ -878,9 +878,9 @@ class RemoteOmnisci(RemoteJIT):
                     # get input_id for output types
                     _input_id = annot.get('input_id', unspecified)
                     if _input_id is not unspecified:
-                        annotations.append(f"input_id={_input_id}")  # noqa
+                        annotations.append({"input_id": _input_id})
                     else:
-                        annotations.append('""')
+                        annotations.append({})
                 else:
                     atype = self.type_to_extarg(a)
                     if isinstance(a, (OmnisciColumnType, OmnisciColumnListType)):
