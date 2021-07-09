@@ -1,5 +1,6 @@
 import os
 import pytest
+import itertools
 from rbc.tests import omnisci_fixture
 
 
@@ -105,22 +106,26 @@ def create_columns(omnisci):
 
 
 @pytest.mark.usefixtures("create_columns")
-@pytest.mark.parametrize("col_name", ("base", "other", "another"))
 @pytest.mark.parametrize("size", (8, 16, 32))
-def test_text_encoding_shared_dict(omnisci, col_name, size):
-    omnisci.require_version((5, 7), "Requires omniscidb-internal PR 5719", label='PR5719')
+def test_text_encoding_shared_dict(omnisci, size):
+    omnisci.require_version((5, 7), "Requires omniscidb-internal PR 5492", label='master')
 
     fn = "test_shared_dict_copy"
     table = f"{omnisci.base_name}_{size}"
-    col = f"{col_name}_{size}"
+    base = f"base_{size}"
 
-    ans_query = (f"SELECT {col} FROM {table};")
-    _, ans = omnisci.sql_execute(ans_query)
-
-    query = f"SELECT * FROM table({fn}(cursor(SELECT {col} FROM {table}), 1))"
+    query = f"SELECT * FROM table({fn}(cursor(SELECT {base} FROM {table}), 1))"
     _, result = omnisci.sql_execute(query)
 
-    assert list(ans) == list(result)
+    assert list(result) == [
+        ("hello",),
+        ("foo",),
+        ("foofoo",),
+        ("world",),
+        ("bar",),
+        ("foo",),
+        ("foofoo",),
+    ]
 
 
 @pytest.mark.usefixtures("create_columns")
@@ -148,15 +153,37 @@ def test_text_encoding_shared_dict2(omnisci, size):
 
 
 @pytest.mark.usefixtures("create_columns")
+@pytest.mark.parametrize("col_name", ("base", "other", "another"))
+@pytest.mark.parametrize("size", (8, 16, 32))
+def test_text_encoding_shared_dict3(omnisci, col_name, size):
+    omnisci.require_version((5, 7), "Requires omniscidb-internal PR 5492", label='master')
+
+    fn = "test_shared_dict_copy"
+    table = f"{omnisci.base_name}_{size}"
+    col = f"{col_name}_{size}"
+
+    ans_query = (f"SELECT {col} FROM {table};")
+    _, ans = omnisci.sql_execute(ans_query)
+
+    query = f"SELECT * FROM table({fn}(cursor(SELECT {col} FROM {table}), 1))"
+    _, result = omnisci.sql_execute(query)
+
+    assert list(result) == list(ans)
+
+
+@pytest.mark.usefixtures("create_columns")
 @pytest.mark.parametrize("size", (8, 16, 32,))
 @pytest.mark.parametrize("num_column_list", (1, 2, 3))
 def test_text_encoding_column_list(omnisci, size, num_column_list):
-    omnisci.require_version((5, 7), "Requires omniscidb-internal PR 5719", label='PR5719')
+    omnisci.require_version((5, 7), "Requires omniscidb-internal PR 5492", label='master')
 
     fn = "test_copy_column_list"
     table = f"{omnisci.base_name}_{size}"
     base = f"base_{size}"
     cols = ', '.join([base] * num_column_list)
+
+    _, expected = omnisci.sql_execute(
+        f"SELECT * FROM table({fn}(cursor(SELECT {base} FROM {table}), 1));")
 
     query = (
         f"SELECT * FROM table({fn}("
@@ -164,15 +191,8 @@ def test_text_encoding_column_list(omnisci, size, num_column_list):
         "1));")
     _, result = omnisci.sql_execute(query)
 
-    assert list(result) == [
-        ("hello",),
-        ("foo",),
-        ("foofoo",),
-        ("world",),
-        ("bar",),
-        ("foo",),
-        ("foofoo",),
-    ]
+    assert list(map(lambda x: x[0] * num_column_list, expected)) == \
+        list(itertools.chain.from_iterable(result))
 
 
 @pytest.mark.usefixtures("create_columns")
@@ -233,12 +253,10 @@ def test_text_encoding_count(omnisci, size):
     table = f"{omnisci.base_name}_{size}"
     base = f"base_{size}"
 
-    _, ans = omnisci.sql_execute(f"SELECT COUNT({base}) FROM {table};")
-
     query = f"SELECT COUNT(out0) FROM table({fn}(cursor(SELECT {base} FROM {table}), 1))"
     _, result = omnisci.sql_execute(query)
 
-    assert list(result) == list(ans)
+    assert list(result) == [(7,)]
 
 
 @pytest.mark.usefixtures("create_columns")
@@ -268,10 +286,10 @@ def test_text_encoding_order_by(omnisci, size):
 
 @pytest.mark.usefixtures("create_columns")
 @pytest.mark.parametrize("size", (8, 16, 32,))
-def test_ct_binding_text1(omnisci, size):
-    omnisci.require_version((5, 7), "Requires omniscidb-internal PR 5719", label='PR5719')
+def test_ct_binding_dict_encoded1(omnisci, size):
+    omnisci.require_version((5, 7), "Requires omniscidb-internal PR 5492", label='master')
 
-    fn = 'ct_binding_text1'
+    fn = 'ct_binding_dict_encoded1'
     table = f"{omnisci.base_name}_{size}"
     base = f"base_{size}"
 
@@ -291,10 +309,10 @@ def test_ct_binding_text1(omnisci, size):
 @pytest.mark.usefixtures("create_columns")
 @pytest.mark.parametrize("size", (8, 16, 32,))
 @pytest.mark.parametrize("fn_suffix", ("2", "3",))
-def test_ct_binding_text23(omnisci, size, fn_suffix):
+def test_ct_binding_dict_encoded23(omnisci, size, fn_suffix):
     omnisci.require_version((5, 7), "Requires omniscidb-internal PR 5719", label='PR5719')
 
-    fn = f"ct_binding_text{fn_suffix}"
+    fn = f"ct_binding_dict_encoded{fn_suffix}"
     table = f"{omnisci.base_name}_{size}"
     base = f"base_{size}"
     other = f"other_{size}"
@@ -314,10 +332,10 @@ def test_ct_binding_text23(omnisci, size, fn_suffix):
 @pytest.mark.usefixtures("create_columns")
 @pytest.mark.parametrize("size", (8, 16, 32,))
 @pytest.mark.parametrize("fn_suffix", ("4", "5", "6"))
-def test_ct_binding_text45(omnisci, size, fn_suffix):
+def test_ct_binding_dict_encoded45(omnisci, size, fn_suffix):
     omnisci.require_version((5, 7), "Requires omniscidb-internal PR 5719", label='PR5719')
 
-    fn = f"ct_binding_text{fn_suffix}"
+    fn = f"ct_binding_dict_encoded{fn_suffix}"
     table = f"{omnisci.base_name}_{size}"
     base = f"base_{size}"
     other = f"other_{size}"
