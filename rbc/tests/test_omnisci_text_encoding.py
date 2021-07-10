@@ -35,13 +35,16 @@ def define(omnisci):
             c[i] = z[i]
         return m * sz
 
-    @omnisci("int32(ColumnList<TextEncodingDict>, RowMultiplier, "
-             "OutputColumn<TextEncodingDict> | input_id=args<0,0>)",
+    @omnisci("int32(ColumnList<TextEncodingDict>, RowMultiplier, OutputColumn<int32_t>)",
              devices=['cpu'])
     def test_copy_column_list(lst, m, y):
-        col = lst[0]
-        for j in range(lst.nrows):
-            y[j] = col[j]
+        for j in range(len(y)):
+            y[j] = 0
+
+        for i in range(lst.ncols):
+            col = lst[i]
+            for j in range(lst.nrows):
+                y[j] += col[j]
         return lst.nrows
 
     @omnisci("int32(ColumnList<T>, Column<int32_t>, ColumnList<T>, RowMultiplier, "
