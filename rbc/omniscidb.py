@@ -770,8 +770,6 @@ class RemoteOmnisci(RemoteJIT):
                 tname, value = tname_value.split(':')
                 null_values_asint[tname] = int(value)
                 dtype = tname
-                if dtype == 'text_encoding_dict':
-                    continue
                 if dtype.startswith('Array<'):
                     dtype = dtype[6:-1]
                 bitwidth = int(''.join(filter(str.isdigit, dtype)))
@@ -865,9 +863,6 @@ class RemoteOmnisci(RemoteJIT):
                 sizer_index = consumed_index + 1
                 sizer = _sizer
 
-            _input_id = annot.get('input_id', unspecified)
-            if _input_id is not unspecified:
-                annot["input_id"] = _input_id.replace("args", "")
             annotations.append(annot)
 
             if isinstance(a, OmnisciCursorType):
